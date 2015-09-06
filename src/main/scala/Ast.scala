@@ -1,7 +1,6 @@
 package net.scivey.scalisp.ast
 import scala.collection.mutable.Map
-import net.scivey.scalisp.ScopeError
-
+import net.scivey.scalisp.{ScopeError, Builtins, TypeError}
 
 class Scope(
   val bindings: Map[Symbol, Term],
@@ -35,16 +34,58 @@ class Scope(
 }
 
 object Scope {
+
+  val add2 = BuiltinFunc({ terms: Seq[Term] =>
+    Builtins.add2(terms(0), terms(1))
+  })
+
+  val mul2 = BuiltinFunc({ terms: Seq[Term] =>
+    Builtins.mul2(terms(0), terms(1))
+  })
+
+  val gt2 = BuiltinFunc({ terms: Seq[Term] =>
+    Builtins.gt2(terms(0), terms(1))
+  })
+
+  val lt2 = BuiltinFunc({ terms: Seq[Term] =>
+    Builtins.lt2(terms(0), terms(1))
+  })
+
+  val builtinPrint = BuiltinFunc({ terms: Seq[Term] =>
+    println(terms(0))
+    NilVal
+  })
+
+  val builtinCar = BuiltinFunc({ terms: Seq[Term] =>
+    terms(0) match {
+      case TermList(children) => children.head
+      case _ => throw new TypeError("car expects a list")
+    }
+  })
+
+  val builtinCdr = BuiltinFunc({ terms: Seq[Term] =>
+    terms(0) match {
+      case TermList(children) => TermList(children.tail)
+      case _ => throw new TypeError("car expects a list")
+    }
+  })
+
+  val builtinList = BuiltinFunc({ terms: Seq[Term] =>
+    TermList(terms)
+  })
+
   val rootBindings: Map[Symbol, Term] = Map(
     Symbol("define") -> Define,
     Symbol("let") -> Let,
     Symbol("cons") -> Cons,
-    Symbol("list") -> MkList,
-    Symbol("print") -> Print,
-    Symbol("+") -> Add,
-    Symbol("*") -> Mul,
-    Symbol(">") -> Gt,
-    Symbol("<") -> Lt
+    Symbol("print") -> builtinPrint,
+    Symbol("+") -> add2,
+    Symbol("*") -> mul2,
+    Symbol(">") -> gt2,
+    Symbol("<") -> lt2,
+    Symbol("car") -> builtinCar,
+    Symbol("cdr") -> builtinCdr,
+    Symbol("list") -> builtinList
   )
 
   def root(): Scope = {
@@ -86,12 +127,14 @@ case class TermList(terms: Seq[Term]) extends Term
 case class Func(params: Seq[Symbol], body: Term, context: Option[Scope]) extends Term
 
 abstract class Builtin extends Term
+
 case object Cons extends Builtin
 case object Let extends Builtin
 case object Define extends Builtin
 case object Print extends Builtin
-case object MkList extends Builtin
 case object IfExpr extends Builtin
+
+case class BuiltinFunc(func: Seq[Term] => Term) extends Builtin
 case object Add extends Builtin
 case object Mul extends Builtin
 case object Gt extends Builtin

@@ -55,28 +55,29 @@ object Interpreter {
   def evalLet(scope: Scope, unEvaledArgs: Seq[Term]): Term = {
     unEvaledArgs.head match {
       case TermList(bindings) => {
-        val indices = bindings.indices
-        val leftsOne: Seq[Term] = indices.filter {
+
+        val bindSyms: Seq[Symbol] = bindings.indices.filter {
           i => i % 2 == 0
         }.map {
           i => bindings(i)
-        }
-        val lefts: Seq[Symbol] = leftsOne.map {
+        }.map {
           case (s: Symbol) => s
           case _ => throw new MalformedException("expected symbol")
         }
-        val rights = indices.filter {
+
+        val bindVals = bindings.indices.filter {
           i => i % 2 == 1
         }.map {
           i => bindings(i)
-        }.map { t => {
-            evalTerm(t, scope)
-          }
+        }.map { t =>
+          evalTerm(t, scope)
         }
-        var mutableMap = Map[Symbol, Term]()
-        mutableMap = mutableMap ++ lefts.zip(rights).toMap
-        val callScope = new Scope(scope.bindings ++ mutableMap, None)
+
+        val callScope = scope.push(
+          Map[Symbol, Term]() ++ bindSyms.zip(bindVals).toMap
+        )
         evalTerm(unEvaledArgs(1), callScope)
+
       }
       case _ => throw new MalformedException("Let requires a list of bindings as its first argument.")
     }
@@ -84,13 +85,6 @@ object Interpreter {
   def evalBuiltin(builtin: Builtin, scope: Scope, unEvaledArgs: Seq[Term]): Term = {
     builtin match {
       case Let => evalLet(scope, unEvaledArgs)
-      case Print => {
-        val evaled = unEvaledArgs.map { a =>
-          evalTerm(a, scope)
-        }
-        println(evaled(evaled.length - 1))
-        NilVal
-      }
       case Define => {
         val sym: Symbol = unEvaledArgs.head match {
           case (s: Symbol) => s
@@ -111,29 +105,11 @@ object Interpreter {
         }
         evaled(evaled.length - 1)
       }
-      case Mul => {
+      case BuiltinFunc(func) => {
         val evaled = unEvaledArgs.map { a =>
           evalTerm(a, scope)
         }
-        Builtins.mul2(evaled(0), evaled(1))
-      }
-      case Gt => {
-        val evaled = unEvaledArgs.map { a =>
-          evalTerm(a, scope)
-        }
-        Builtins.gt2(evaled(0), evaled(1))
-      }
-      case Lt => {
-        val evaled = unEvaledArgs.map { a =>
-          evalTerm(a, scope)
-        }
-        Builtins.lt2(evaled(0), evaled(1))
-      }
-      case Add => {
-        val evaled = unEvaledArgs.map {a =>
-          evalTerm(a, scope)
-        }
-        Builtins.add2(evaled(0), evaled(1))
+        func(evaled)
       }
       case IfExpr => {
         if (isTruthy(evalTerm(unEvaledArgs(0), scope))) {
@@ -172,14 +148,10 @@ object Interpreter {
               }
             }
           }
-          case (f: Func) => {
-            f match {
-              case Func(params, body, None) => {
-                Func(params, body, Some(scope))
-              }
-              case Func(params, body, Some(subScope)) => {
-                Func(params, body, Some(scope.push(subScope)))
-              }
+          case Func(params, body, subScope) => {
+            subScope match {
+              case Some(s) => Func(params, body, Some(scope.push(s)))
+              case None    => Func(params, body, Some(scope))
             }
           }
           case (b: Builtin) => {

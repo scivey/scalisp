@@ -119,6 +119,9 @@ object Main {
         ( print cz )
       )
       ( print "end2" )
+      ( print ( car ( list 5 4 3 ) ) )
+      ( print ( cdr ( list 5 4 3 ) ) )
+
     )
   """
 
