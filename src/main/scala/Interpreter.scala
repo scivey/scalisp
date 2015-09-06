@@ -103,12 +103,8 @@ object Interpreter {
 
   def evalTerm(source: Term, scope: Scope): Term = {
     source match {
-      case NilVal => NilVal
+      case (lit: Literal) => lit
       case (s: Symbol) => scope.get(s)
-      case (b: BoolLit) => b
-      case (i: IntLit) => i
-      case (s: StrLit) => s
-      case (f: FloatLit) => f
       case (f: Func) => evalFuncCall(f, scope, Seq())
       case TermList(terms) => {
         terms.head match {
@@ -156,9 +152,6 @@ object Interpreter {
             results(results.length - 1)
           }
         }
-      }
-      case _ => {
-        throw new MalformedException("bad!")
       }
     }
   }
