@@ -7,6 +7,11 @@ import net.scivey.scalisp.parser.Parser
 
 
 object Main {
+  def main(args: Array[String]): Unit = {
+    val prog = Parser.parse(Tokenizer.tokenize(source))
+    println(prog)
+    Interpreter.evaluate(prog)
+  }
 
   val source = """
     (
@@ -25,10 +30,10 @@ object Main {
           ( lambda
             ( z )
             ( if
-              ( < x z )
+              ( < z x )
               false
               ( if
-                ( > y z )
+                ( > z y )
                 false
                 true
               )
@@ -90,11 +95,13 @@ object Main {
         )
       )
       ( define between30And65 ( isBetween 30 65 ) )
+      ( print "between: start" )
       ( print ( between30And65 40 ) )
       ( print ( between30And65 20 ) )
       ( print ( between30And65 50 ) )
       ( print ( between30And65 100 ) )
       ( print ( between30And65 60 ) )
+      ( print "between: end" )
       ( define lt30 ( lessThan 30 ) )
       ( define cx ( ( lessThan 30 ) 10 ) )
       ( define cy ( ( lessThan 30 ) 60 ) )
@@ -121,16 +128,47 @@ object Main {
       ( print "end2" )
       ( print ( car ( list 5 4 3 ) ) )
       ( print ( cdr ( list 5 4 3 ) ) )
-
+      ( define printer
+        ( lambda
+          ( x )
+          ( lambda
+            ( )
+            ( print x )
+          )
+        )
+      )
+      ( define sayHello ( printer "hello" ) )
+      ( sayHello )
+      ( define curry2
+        ( lambda
+          ( f )
+          ( lambda
+            ( x )
+            ( lambda
+              ( y )
+              ( f x y )
+            )
+          )
+        )
+      )
+      ( define partial2
+        ( lambda
+          ( f x )
+          ( ( curry2 f ) x )
+        )
+      )
+      ( define add5 ( ( curry2 + ) 5 ) )
+      ( print ( add5 7 ) )
+      ( define add60 ( partial2 + 60 ) )
+      ( print ( add60 3 ) )
+      ( print ( truthy? nil ) )
+      ( print ( truthy? 5 ) )
+      ( print ( truthy? 5 ) )
+      ( print ( nil? nil ) )
+      ( print ( nil? 0 ) )
+      ( print ( nil? nil ) )
+      ( print ( len ( list 5 4 2 ) ) )
+      ( print ( len ( list 2 ) ) )
     )
   """
-
-  def main(args: Array[String]) = {
-    println("start")
-    val tokes = Tokenizer.tokenize(source)
-    val prog2 = Parser.parse(tokes)
-    println(prog2)
-    Interpreter.evaluate(prog2)
-    println("stop")
-  }
 }

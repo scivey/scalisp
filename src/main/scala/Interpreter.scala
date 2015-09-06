@@ -4,54 +4,29 @@ import net.scivey.scalisp.ast._
 
 
 object Interpreter {
-  def isTruthy(t: Term): Boolean = {
-    t match {
-      case NilVal => false
-      case BoolLit(v) => {
-        v
-      }
-      case IntLit(i) => {
-        if (i == 0) {
-          false
-        } else {
-          true
-        }
-      }
-      case StrLit(s) => {
-        if (s == "") {
-          false
-        } else {
-          true
-        }
-      }
-      case _ => throw new TypeError("Undefined truthiness for term: " + t)
-    }
-  }
   def evalFuncCall(source: Func, scope: Scope, args: Seq[Term]): Term = {
-    var callScope: Scope = source.context match {
+    val callScope: Scope = (source.context match {
       case None => {
         scope
       }
       case Some(aScope) => {
         scope.push(aScope)
       }
-    }
-    callScope = callScope.push(
+    }).push(
       Map[Symbol, Term]() ++ source.params.zip(args).toMap.toSeq
     )
 
-    var result = evalTerm(source.body, callScope)
-    result match {
-      case Func(params, body, None) => {
-        Func(params, body, Some(callScope))
+    evalTerm(source.body, callScope) match {
+      case Func(params, body, aScope) => {
+        aScope match {
+          case Some(subScope) => Func(params, body, Some(subScope.push(callScope)))
+          case None => Func(params, body, Some(callScope))
+        }
       }
-      case Func(params, body, Some(ownScope)) => {
-        Func(params, body, Some(ownScope.push(callScope)))
-      }
-      case _ => result
+      case x => x
     }
-
   }
+
   def evalLet(scope: Scope, unEvaledArgs: Seq[Term]): Term = {
     unEvaledArgs.head match {
       case TermList(bindings) => {
@@ -82,6 +57,7 @@ object Interpreter {
       case _ => throw new MalformedException("Let requires a list of bindings as its first argument.")
     }
   }
+
   def evalBuiltin(builtin: Builtin, scope: Scope, unEvaledArgs: Seq[Term]): Term = {
     builtin match {
       case Let => evalLet(scope, unEvaledArgs)
@@ -112,7 +88,7 @@ object Interpreter {
         func(evaled)
       }
       case IfExpr => {
-        if (isTruthy(evalTerm(unEvaledArgs(0), scope))) {
+        if (BuiltinHelpers.isTruthy(evalTerm(unEvaledArgs(0), scope))) {
           evalTerm(unEvaledArgs(1), scope)
         } else {
           if (unEvaledArgs.length >= 3) {
@@ -122,9 +98,9 @@ object Interpreter {
           }
         }
       }
-      case _ => throw new MalformedException("not handled yet")
     }
   }
+
   def evalTerm(source: Term, scope: Scope): Term = {
     source match {
       case NilVal => NilVal

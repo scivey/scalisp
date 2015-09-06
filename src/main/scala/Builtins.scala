@@ -15,6 +15,7 @@ object Builtins {
       case (_, _) => throw new TypeError("undefined additon operation")
     }
   }
+
   def mul2(left: Term, right: Term): Term = {
     (left, right) match {
       case (IntLit(x), IntLit(y)) => IntLit(x * y)
@@ -26,6 +27,7 @@ object Builtins {
       case (_, _) => throw new TypeError("undefined multiplication operation")
     }
   }
+
   def gt2(left: Term, right: Term): Term = {
     val boolVal = (left, right) match {
       case (IntLit(x), IntLit(y)) => x > y
@@ -37,6 +39,7 @@ object Builtins {
     }
     BoolLit(boolVal)
   }
+
   def lt2(left: Term, right: Term): Term = {
     val boolVal = (left, right) match {
       case (IntLit(x), IntLit(y)) => x < y
@@ -44,8 +47,21 @@ object Builtins {
       case (FloatLit(x), FloatLit(y)) => x < y
       case (FloatLit(x), IntLit(y)) => x < y
       case (StrLit(x), StrLit(y)) => x < y
-      case (t1, t2) => throw new TypeError("undefined > comparison: " + t1 + t2)
+      case (t1, t2) => throw new TypeError("undefined < comparison: " + t1 + t2)
     }
     BoolLit(boolVal)
   }
+
+  def isTruthy(t: Term): Term = {
+    BoolLit(BuiltinHelpers.isTruthy(t))
+  }
+
+  def isNil(t: Term): Term = {
+    BoolLit(BuiltinHelpers.isNil(t))
+  }
+
+  def getListLen(t: Term): Term = {
+    IntLit(BuiltinHelpers.getListLen(t))
+  }
 }
+

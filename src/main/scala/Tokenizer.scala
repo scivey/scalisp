@@ -5,7 +5,6 @@ case object LParToken extends Token
 case object RParToken extends Token
 case class StrLitToken(v: String) extends Token
 case class IntLitToken(v: Int) extends Token
-// case class FloatLitToken(v: Float) extends Token
 case class SymbolToken(v: String) extends Token
 
 object Tokenizer {
@@ -21,7 +20,7 @@ object Tokenizer {
     isNumericChar(c) || isAlphaChar(c)
   }
   def isSymbolChar(c: Char): Boolean = {
-    isAlphanumeric(c) || c == '_' || c == '-' || c == '+' || c == '*' || c == '/' || c == '<' || c == '>' || c == '='
+    isAlphanumeric(c) || c == '_' || c == '-' || c == '+' || c == '*' || c == '/' || c == '<' || c == '>' || c == '=' || c == '?'
   }
   def takeSymbolToken(source: String): (Option[Token], String) = {
     if (!isSymbolChar(source.head)) {
