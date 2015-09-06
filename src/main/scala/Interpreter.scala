@@ -4,8 +4,31 @@ import net.scivey.scalisp.ast._
 
 
 object Interpreter {
+  def isTruthy(t: Term): Boolean = {
+    t match {
+      case NilVal => false
+      case BoolLit(v) => {
+        println("boolLit")
+        v
+      }
+      case IntLit(i) => {
+        if (i == 0) {
+          false
+        } else {
+          true
+        }
+      }
+      case StrLit(s) => {
+        if (s == "") {
+          false
+        } else {
+          true
+        }
+      }
+      case _ => throw new TypeError("Undefined truthiness for term: " + t)
+    }
+  }
   def evalFuncCall(source: Func, scope: Scope, args: Seq[Term]): Term = {
-    println("evalFuncCall")
     var callScope: Scope = source.context match {
       case None => {
         scope
@@ -17,11 +40,9 @@ object Interpreter {
     val bindings = source.params.zip(args)
     var mutableMap = Map[Symbol, Term]()
     mutableMap = mutableMap ++ bindings.toMap.toSeq
-    println("evalFuncCall: " + mutableMap.toString)
     callScope = callScope.push(mutableMap)
 
     var result = evalTerm(source.body, callScope)
-    println("res")
     result match {
       case Func(params, body, None) => {
         Func(params, body, Some(callScope))
@@ -51,17 +72,12 @@ object Interpreter {
         }.map {
           i => bindings(i)
         }.map { t => {
-            println(t)
-            val e = evalTerm(t, scope)
-            println("-> " + e)
-            e
+            evalTerm(t, scope)
           }
         }
         var mutableMap = Map[Symbol, Term]()
-        mutableMap = mutableMap ++ lefts.zip(rights).toMap.toSeq
-        println(mutableMap)
-        val callScope = scope.push(mutableMap)
-        println(callScope)
+        mutableMap = mutableMap ++ lefts.zip(rights).toMap
+        val callScope = new Scope(scope.bindings ++ mutableMap, None)
         evalTerm(unEvaledArgs(1), callScope)
       }
       case _ => throw new MalformedException("Let requires a list of bindings as its first argument.")
@@ -71,9 +87,15 @@ object Interpreter {
     builtin match {
       case Let => evalLet(scope, unEvaledArgs)
       case Print => {
-        val arg = evalTerm(unEvaledArgs.head, scope)
-        println(arg)
+        println(unEvaledArgs)
+        val evaled = unEvaledArgs.map { a =>
+          evalTerm(a, scope)
+        }
+        println(evaled(evaled.length - 1))
         NilVal
+        // val arg = evalTerm(unEvaledArgs.head, scope)
+        // println(arg)
+        // NilVal
       }
       case Define => {
         val sym: Symbol = unEvaledArgs.head match {
@@ -96,16 +118,39 @@ object Interpreter {
         evaled(evaled.length - 1)
       }
       case Mul => {
-        val evaled = unEvaledArgs.map {a =>
+        val evaled = unEvaledArgs.map { a =>
           evalTerm(a, scope)
         }
         Builtins.mul2(evaled(0), evaled(1))
+      }
+      case Gt => {
+        val evaled = unEvaledArgs.map { a =>
+          evalTerm(a, scope)
+        }
+        Builtins.gt2(evaled(0), evaled(1))
+      }
+      case Lt => {
+        val evaled = unEvaledArgs.map { a =>
+          evalTerm(a, scope)
+        }
+        Builtins.lt2(evaled(0), evaled(1))
       }
       case Add => {
         val evaled = unEvaledArgs.map {a =>
           evalTerm(a, scope)
         }
         Builtins.add2(evaled(0), evaled(1))
+      }
+      case IfExpr => {
+        if (isTruthy(evalTerm(unEvaledArgs(0), scope))) {
+          evalTerm(unEvaledArgs(1), scope)
+        } else {
+          if (unEvaledArgs.length >= 3) {
+            evalTerm(unEvaledArgs(2), scope)
+          } else {
+            NilVal
+          }
+        }
       }
       case _ => throw new MalformedException("not handled yet")
     }
@@ -114,12 +159,17 @@ object Interpreter {
     source match {
       case NilVal => NilVal
       case (s: Symbol) => scope.get(s)
+      case (b: BoolLit) => b
       case (i: IntLit) => i
       case (s: StrLit) => s
       case (f: FloatLit) => f
       case (f: Func) => evalFuncCall(f, scope, Seq())
       case TermList(terms) => {
         terms.head match {
+          case (t: TermList) => {
+            val first = evalTerm(t, scope)
+            evalTerm(TermList(Seq(first) ++ terms.slice(1, terms.length)), scope)
+          }
           case (f: Func) => {
             f match {
               case Func(params, body, None) => {
@@ -145,10 +195,7 @@ object Interpreter {
                 evalBuiltin(b, scope, terms.slice(1, terms.length))
               }
               case _ => {
-                val results = terms.map { t =>
-                  evalTerm(t, scope)
-                }
-                results(results.length - 1)
+                throw new TypeError("sexpr must start with 1) a symbol resolving to a function or 2) a builtin.")
               }
             }
           }
@@ -166,7 +213,7 @@ object Interpreter {
     }
   }
 
-  def evaluate(source: Term): Unit = {
+  def evaluate(source: Term): Term = {
     val scope = Scope.root
     evalTerm(source, scope)
   }

@@ -37,13 +37,6 @@ object Parser {
       }
       case _ => throw new ParseError("expected TermList")
     }
-    println("")
-    println("")
-
-    println(body)
-    println("")
-    println("")
-
     (Func(symTerms, body, None), rem)
   }
   def parseSexpr(tokens: Seq[Token]): (Term, Seq[Token]) = {
@@ -62,7 +55,6 @@ object Parser {
           val (nextTerm, rem) = parseRec(remaining)
           terms = terms ++ Seq(nextTerm)
           remaining = rem
-          // current = remaining.head
         } else {
           break
         }
@@ -87,6 +79,15 @@ object Parser {
           }
           case "do" => {
             (Do, tokens.slice(1, tokens.length))
+          }
+          case "if" => {
+            (IfExpr, tokens.slice(1, tokens.length))
+          }
+          case "true" => {
+            (BoolLit(true), tokens.slice(1, tokens.length))
+          }
+          case "false" => {
+            (BoolLit(false), tokens.slice(1, tokens.length))
           }
           case s => {
             (Symbol(s), tokens.slice(1, tokens.length))

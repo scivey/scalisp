@@ -21,7 +21,7 @@ object Tokenizer {
     isNumericChar(c) || isAlphaChar(c)
   }
   def isSymbolChar(c: Char): Boolean = {
-    isAlphanumeric(c) || c == '_' || c == '-' || c == '+' || c == '*' || c == '/'
+    isAlphanumeric(c) || c == '_' || c == '-' || c == '+' || c == '*' || c == '/' || c == '<' || c == '>' || c == '='
   }
   def takeSymbolToken(source: String): (Option[Token], String) = {
     if (!isSymbolChar(source.head)) {

@@ -29,7 +29,8 @@ class Scope(
     }
   }
   override def toString(): String = {
-    "Scope( " + bindings.toString + ")"
+    // "Scope( " + bindings.toString + ")"
+    "Scope"
   }
 }
 
@@ -41,7 +42,9 @@ object Scope {
     Symbol("list") -> MkList,
     Symbol("print") -> Print,
     Symbol("+") -> Add,
-    Symbol("*") -> Mul
+    Symbol("*") -> Mul,
+    Symbol(">") -> Gt,
+    Symbol("<") -> Lt
   )
 
   def root(): Scope = {
@@ -63,9 +66,15 @@ case class StrLit(v: String) extends Literal {
 case class FloatLit(v: Float) extends Literal {
   override def toString(): String = v.toString
 }
+
+case class BoolLit(v: Boolean) extends Literal {
+  override def toString(): String = v.toString
+}
+
 case object NilVal extends Literal {
   override def toString(): String = "Nil"
 }
+
 
 case class Symbol(name: String) extends Term {
   override def toString(): String = "Symbol('" + name + "')"
@@ -82,9 +91,10 @@ case object Let extends Builtin
 case object Define extends Builtin
 case object Print extends Builtin
 case object MkList extends Builtin
-case object IfExp extends Builtin
+case object IfExpr extends Builtin
 case object Add extends Builtin
 case object Mul extends Builtin
-
+case object Gt extends Builtin
+case object Lt extends Builtin
 case object Do extends Builtin
 
