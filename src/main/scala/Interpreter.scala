@@ -8,7 +8,6 @@ object Interpreter {
     t match {
       case NilVal => false
       case BoolLit(v) => {
-        println("boolLit")
         v
       }
       case IntLit(i) => {
@@ -37,10 +36,9 @@ object Interpreter {
         scope.push(aScope)
       }
     }
-    val bindings = source.params.zip(args)
-    var mutableMap = Map[Symbol, Term]()
-    mutableMap = mutableMap ++ bindings.toMap.toSeq
-    callScope = callScope.push(mutableMap)
+    callScope = callScope.push(
+      Map[Symbol, Term]() ++ source.params.zip(args).toMap.toSeq
+    )
 
     var result = evalTerm(source.body, callScope)
     result match {
@@ -87,15 +85,11 @@ object Interpreter {
     builtin match {
       case Let => evalLet(scope, unEvaledArgs)
       case Print => {
-        println(unEvaledArgs)
         val evaled = unEvaledArgs.map { a =>
           evalTerm(a, scope)
         }
         println(evaled(evaled.length - 1))
         NilVal
-        // val arg = evalTerm(unEvaledArgs.head, scope)
-        // println(arg)
-        // NilVal
       }
       case Define => {
         val sym: Symbol = unEvaledArgs.head match {
@@ -168,7 +162,15 @@ object Interpreter {
         terms.head match {
           case (t: TermList) => {
             val first = evalTerm(t, scope)
-            evalTerm(TermList(Seq(first) ++ terms.slice(1, terms.length)), scope)
+            val remaining = terms.slice(1, terms.length)
+            first match {
+              case (f: Func) => {
+                evalFuncCall(f, scope, remaining)
+              }
+              case x => {
+                evalTerm(TermList(Seq(x) ++ remaining), scope)
+              }
+            }
           }
           case (f: Func) => {
             f match {
@@ -214,7 +216,6 @@ object Interpreter {
   }
 
   def evaluate(source: Term): Term = {
-    val scope = Scope.root
-    evalTerm(source, scope)
+    evalTerm(source, Scope.root)
   }
 }

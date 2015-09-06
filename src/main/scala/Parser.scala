@@ -24,8 +24,6 @@ object Parser {
 
     var (body, rem) = parseSexpr(remaining.slice(1, tokens.length))
 
-    println(params)
-
     var symTerms: Seq[Symbol] = params match {
       case TermList(terms) => {
         terms.map { t =>
